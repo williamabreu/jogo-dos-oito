@@ -8,18 +8,22 @@ class App:
         self.board = Board(start_matrix, end_matrix)
         self.solution = None
     
-    def solve(self):
+    def solve(self):       
         print('Solving...')
         self.solution = self.board.solve()
         print()
     
     def display_solution(self):
+        print('# Initial #'.center(13))
+        print()
+        print(self.board)
+        print()
+        
         for i, pos in enumerate(self.solution):
-            self.board.move(pos)
-            
-            print(('# %d #' % i).center(13))
+            input('Press ENTER to continue')
+            print()
+            self.board.move(pos)            
+            print('# {} #'.format(i+1).center(13))
             print()
             print(self.board)
-            print()
-            input('Press ENTER to continue')
             print()
