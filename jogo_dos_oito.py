@@ -58,17 +58,26 @@ class Board:
     """
     Representa o estado do tabuleiro.
     """
-    def __init__(self, matrix):
+    def __init__(self, matrix, goal):
         """
         Instancia um novo tabuleiro.
 
         :param matrix: a matriz que representa o estado inicial do tabuleiro, numerada de 0 a 8, sendo 0 o vazio. (type: list)
+        :param goal: a matriz que representa o estado inicial do tabuleiro, numerada de 0 a 8, sendo 0 o vazio. (type: list)
         """
         self._size = size = 3
 
-        # validação da entrada
+        # validação da entrada matrix
         temp = []
         for line in matrix:
+            temp.extend(line)
+        temp.sort()
+        if len(temp) != 9 or temp != list(range(size**2)):
+            raise ValueError("Invalid matrix on constructor")
+        
+        # validação da entrada goal
+        temp = []
+        for line in goal:
             temp.extend(line)
         temp.sort()
         if len(temp) != 9 or temp != list(range(size**2)):
@@ -82,19 +91,11 @@ class Board:
                 if matrix[i][j] == 0:
                     self._empty = (j, i)
         
-        # posições finais do jogo
-        self.goals = {
-            1: (0, 0), 
-            2: (1, 0), 
-            3: (2, 0), 
-            4: (0, 1), 
-            5: (1, 1), 
-            6: (2, 1), 
-            7: (0, 2), 
-            8: (1, 2), 
-            9: (2, 2), 
-            0: (2, 2)
-        }
+        # posições finais do jogo (y, x)
+        self.goals = {}
+        for i in range(len(goal)):
+            for j in range(len(goal[i])):
+                self.goals[goal[i][j]] = (j, i)
     
     def solve(self):
         """
@@ -183,27 +184,53 @@ class Board:
         for i in range(len(self._tiles)):
             for j in range(len(self._tiles[i])):
                 element = self._tiles[i][j]
+                string += ' '
                 if element == 0:
-                    string += '  '
+                    string += '    '
                 else:
-                    string += str(element) + ' '
-            string += '\n'
-        return string
+                    string += str(element) + '   '
+            string += '\n\n'
+        return string[:-2]
+
+
+class App:
+    """
+    Representa a aplicação CLI.
+    """
+    def __init__(self, start_matrix, end_matrix):
+        self.board = Board(start_matrix, end_matrix)
+        self.solution = None
+    
+    def solve(self):
+        print 'Solving...'
+        self.solution = self.board.solve()
+        print
+    
+    def display_solution(self):
+        for i, pos in enumerate(self.solution):
+            self.board.move(pos)
             
-
-
+            print ('# %d #' % i).center(13)
+            print
+            print self.board
+            print
+            raw_input('Press ENTER to continue')
+            print
 
 
 if __name__ == '__main__':
-    matrix = [
+    matrix_start = [
         [1,8,7],
         [3,5,0],
         [4,6,2]
     ]
-    b = Board(matrix)
-    s = b.solve()
-    print(b)
-    for move in s:
-        raw_input()
-        b.move(move)
-        print(b)
+
+    matrix_end = [
+        [1,2,3],
+        [4,5,6],
+        [7,8,0]
+    ]
+
+    app = App(matrix_start, matrix_end)
+    app.solve()
+    app.display_solution()
