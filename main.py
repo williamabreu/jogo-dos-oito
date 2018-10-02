@@ -1,3 +1,5 @@
+from application import App
+
 def main():
     """
     Chamada principal do programa.
