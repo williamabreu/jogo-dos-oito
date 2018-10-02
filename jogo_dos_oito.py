@@ -1,138 +1,88 @@
 # -*- coding: utf-8 -*-
-"""
-
-Solver script for the fifteen-puzzle and derivations of it (8-puzzle etc.),
-based on what we've learnt on ai-class.com so far. Don't expect it to run very
-fast, certain puzzle states take ages to solve. I have documented and
-commented the code thoroughly, so hopefully it's easy to understand what's
-going on.
-
-Written by Håvard Pettersson. Released into the public domain.
-
-Example usage:
-
-    >>> from slidingpuzzle import Board
-    >>> b = Board(3, "1,8,7,3,0,5,4,6,2")
-    >>> print b
-     1  8  7
-     3     5
-     4  6  2
-    >>> b.get_solution()
-    Solution found!
-    Moves: 22
-    Nodes visited: 601
-    Time: 0.856076
-    All moves: (1, 0), (2, 0), ..., (2, 2)
-"""
 
 import copy
 import math
-import time
 import bisect
-import random
-# import itertools
 
 
 class Node:
     """
-
-    Represents a node in the A* search algorithm graph.
-
+    Representa um nó no grafo A*.
     """
     def __init__(self, board, action, cost, parent):
         """
-        Initialize a new Node object.
+        Instancia um novo nó A*.
 
-        Arguments:
-            board -- the board state at this node (Board object)
-            action -- the action that took us here from the previous node
-            cost -- the total cost of the path from the initial node to this
-                    node (the "g" component of the A* algorithm)
-            parent -- the previous Node object
+        :param board: o estado do tabuleiro (type: Board)
+        :param action: a ação que leva de volta ao nó anterior (type: 2-tuple)
+        :param cost: o custo total do caminho desde o nó inicial até este, componente "g" de A* (type: int)
+        :param parent: o nó anterior (type: Node)
         """
         self.board = board
         self.action = action
         self.cost = cost
         self.parent = parent
-        self.estimate = cost + board.h() # A* "f" function
+        self.estimate = cost + board.h() # função "f" de A*
     
     def expand(self):
-        """Return a list possible nodes to move to from this node."""
+        """
+        Retorna a lista de nós possíveis para ir a partir daqui.
+        """
         nodes = []
 
-        for action in self.board.actions():
-            # copy the current board
+        for action in self.board.valid_moves():
             board = copy.deepcopy(self.board)
-            board.apply_action(action)
+            board.move(action)
 
             nodes.append(Node(board, action, self.cost + 1, self))
         
         return nodes
 
     def __eq__(self, rhs):
-        # when checking nodes for equality, compare their boards instead
-        # thus, when checking if a node is in the frontier/explored list, check
-        # for the board configuration instead
+        """
+        Verificação de igualdade entre nós pela configuração do tabuleiro.
+        """        
         if isinstance(rhs, Node):
             return self.board._tiles == rhs.board._tiles
         else:
             return rhs == self
 
     def __lt__(self, rhs):
-        # when comparing nodes (sorting), compare their estimates (so they are sorted by estimates)
+        """
+        Verificação de ordenação entre nós pela estimativa "f" de A*.
+        """
         return self.estimate < rhs.estimate
 
 
 class Board:
     """
-
-    Contains the state of a sliding puzzle board, as well as some methods for
-    manipulating it.
-
+    Representa o estado do tabuleiro.
     """
     def __init__(self, matrix):
         """
-        Initialize a new Board object.
+        Instancia um novo tabuleiro.
 
-        Keyword arguments:
-            size -- the width/height of the board to create (default: 4)
-            text -- string representation of the board; a comma-separated
-                    string of numbers where 0 represents the empty tile
-                    (optional; if left out a board at the goal state will be
-                    generated)
+        :param matrix: a matriz que representa o estado inicial do tabuleiro, numerada de 0 a 8, sendo 0 o vazio. (type: list)
         """
         self._size = size = 3
 
-        # make sure we have valid input
+        # validação da entrada
         temp = []
         for line in matrix:
             temp.extend(line)
         temp.sort()
         if len(temp) != 9 or temp != list(range(size**2)):
-            raise ValueError("Invalid tile matrix supplied")
+            raise ValueError("Invalid matrix on constructor")
         
         self._tiles = matrix
 
-        # make sure we have valid input
-        # if len(values) != 9 or sorted(values) != list(range(size**2)):
-        #     raise ValueError("Invalid tile values supplied")
-        
-        # list comprehension voodoo to put the values into a nested list, matrix
-        # self._tiles = [[n if n > 0 else None for n in values[y * size:(y + 1) * size]] for y in range(size)]
-
-        # store the location of the empty tile, (x,y)
+        # posição do espaço vazio
         for i in range(len(matrix)):
             for j in range(len(matrix[i])):
                 if matrix[i][j] == 0:
                     self._empty = (j, i)
-        #self._empty = values.index(0) % size, values.index(0) / size
         
-        # store the goal location of each tile
-        # self.goals = {}
-        # for x in range(size_sq):
-        #     self.goals[x + 1] = x % size, x / size
-        # self.goals[None] = self.goals[x + 1]
-        # print(self.goals)
+        # posições finais do jogo
         self.goals = {
             1: (0, 0), 
             2: (1, 0), 
@@ -146,18 +96,14 @@ class Board:
             0: (2, 2)
         }
     
-    def get_solution(self):
+    def solve(self):
         """
-        Solve a sliding puzzle board. Note that this only prints the actual moves,
-        it does not change the board to its solved state.
+        Retorna a lista de 2-tuples com os movimentos para resolver o jogo.
         """
-        start_time = time.clock()
         frontier = [Node(self, None, 0, None)]
         explored = []
-        visited = 0
 
         while True:
-            visited += 1
             # pop the lowest value from the frontier (sorted using bisect, so pop(0) is the lowest)
             node = frontier.pop(0)
 
@@ -171,13 +117,6 @@ class Board:
                 moves.reverse()
 
                 return moves 
-                
-                # print("Solution found!")
-                # print("Moves:", len(moves))
-                # print("Nodes visited:", visited)
-                # print("Time:", time.clock() - start_time)
-                # print("All moves:", ", ".join(str(move) for move in moves))
-                # break
             else:
                 # we're not done yet:
                 # expand the node, and add the new nodes to the frontier, as long
@@ -191,8 +130,8 @@ class Board:
     
     def h(self):
         """
-        The heuristic function for A*. Currently implemented as the sum of
-        the Manhattan distance between each tile and it's goal position.
+        Função "h" heurística de A*, retorna a distância de Manhattan 
+        entre a posição atual e a posição final no jogo.
         """
         h = 0
         for y, row in enumerate(self._tiles):
@@ -201,52 +140,45 @@ class Board:
                      math.fabs(y - self.goals[tile][1])
         return h
     
-    def apply_action(self, action):
+    def move(self, position):
         """
-        Apply an action (a move) to the board.
+        Muda o estado do tabuleiro movendo o espaço branco para a posição dada.
 
-        Arguments:
-            action -- a 2-tuple containing the x,y coordinate of the tile to move
-        
-        Raises a ValueError on invalid moves.
+        :param position: a posição para onde deve ir (type: 2-tuple)
         """
-        x, y = action
+        x, y = position
         e_x, e_y = self._empty
 
-        # check that the tile to move and the empty tile are neighbors
+        # valida se a posição de movimento e o espaço braco são vizinhos
         if (math.fabs(x - e_x) == 1) ^ (math.fabs(y - e_y) == 1):
-            # swap them
+            # troca os dois de lugar
             self._tiles[y][x], self._tiles[e_y][e_x] = 0, self._tiles[y][x]
-            self._empty = x, y # empty tile has moved; store new location
+            self._empty = x, y # atualiza a posição do espaço branco
         else:
             raise ValueError("Invalid move")
 
-    def actions(self):
-        """Return a list of possible actions to perform on the board."""
+    def valid_moves(self):
+        """
+        Retorna a lista de posições posíveis para onde o espaço branco pode ir.
+        """
         x, y = self._empty
+        valid_moves = []
 
-        actions = []
+        if x > 0: 
+            valid_moves.append((x - 1, y))
+        if y > 0: 
+            valid_moves.append((x, y - 1))
+        if x < self._size - 1: 
+            valid_moves.append((x + 1, y))
+        if y < self._size - 1: 
+            valid_moves.append((x, y + 1))
 
-        if x > 0: actions.append((x - 1, y))
-        if y > 0: actions.append((x, y - 1))
-        if x < self._size - 1: actions.append((x + 1, y))
-        if y < self._size - 1: actions.append((x, y + 1))
-
-        return actions
-    
-    # def randomize(self, moves=1000):
-    #     """
-    #     Randomize the board.
-
-    #     Arguments:
-    #         moves -- the amound of random moves to perform (default: 1000)
-    #     """
-    #     for _ in range(moves): self.apply_action(random.choice(self.actions()))
+        return valid_moves
     
     def __str__(self):
-        # grid = "\n".join([" ".join(["{:>2}"] * self._size)] * self._size)
-        # values = itertools.chain(*self._tiles)
-        # return grid.format(*values).replace("None", "  ")
+        """
+        Representação do tabuleiro em string.
+        """
         string = ''
         for i in range(len(self._tiles)):
             for j in range(len(self._tiles[i])):
@@ -269,9 +201,9 @@ if __name__ == '__main__':
         [4,6,2]
     ]
     b = Board(matrix)
-    s = b.get_solution()
+    s = b.solve()
     print(b)
     for move in s:
         raw_input()
-        b.apply_action(move)
+        b.move(move)
         print(b)
