@@ -5,15 +5,15 @@ def main():
     Chamada principal do programa.
     """
     matrix_start = [
-        [1,8,7],
-        [3,5,0],
-        [4,6,2]
+        [2,0,3],
+        [1,7,4],
+        [6,8,5]
     ]
 
     matrix_end = [
         [1,2,3],
-        [4,5,6],
-        [7,8,0]
+        [8,0,4],
+        [7,6,5]
     ]
 
     app = App(matrix_start, matrix_end)
