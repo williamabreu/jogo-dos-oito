@@ -53,12 +53,12 @@ class Board:
         explored = []
 
         while True:
-            # pop the lowest value from the frontier (sorted using bisect, so pop(0) is the lowest)
+            # remove o menor valor da fronteira
             node = frontier.pop(0)
 
-            # if the current node is at the goal state, we're done! 
+            # se o nó atual está no estado final, jogo resolvido
             if node.board.h() == 0:
-                # recursively compile a list of all the moves
+                # monta a lista de todos os movimentos para a solução recursivamente
                 moves = []
                 while node.parent:
                     moves.append(node.action)
@@ -66,13 +66,13 @@ class Board:
                 moves.reverse()
 
                 return moves 
+            # não chegou ao estado final ainda
             else:
-                # we're not done yet:
-                # expand the node, and add the new nodes to the frontier, as long
-                # as they're not in the frontier or explored list already
+                # expande o nó e adiciona os novos nós na fronteira se já não estiverem na fronteira
+                # ou se ainda não foram explorados
                 for new_node in node.expand():
                     if new_node not in frontier and new_node not in explored:
-                        # use bisect to insert the node at the proper place in the frontier
+                        # insort insere elemento em ordem na lista 
                         bisect.insort(frontier, new_node)
                 
                 explored.append(node)
